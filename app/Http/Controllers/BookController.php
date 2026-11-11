@@ -2,59 +2,42 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreBookRequest;
+use App\Http\Resources\BookResource;
 use App\Models\Book;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 
 class BookController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
+     * List books, newest first, 15 per page.
      */
-    public function index()
+    public function index(): AnonymousResourceCollection
     {
-        $books = Book::all();
-
-        return response()->json($books);
+        return BookResource::collection(Book::latest('id')->paginate());
     }
 
     /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * Store a new book.
      */
-    public function store(Request $request)
+    public function store(StoreBookRequest $request): JsonResponse
     {
-        $book = new Book();
-        $book->title = $request->title;
+        $book = Book::create($request->validated());
 
-        $book->save();
-
-        $data = [
-            'message' => 'book added successfully',
-            'book' => $book
-        ];
-
-        return response()->json($data);
+        return BookResource::make($book)
+            ->response()
+            ->setStatusCode(Response::HTTP_CREATED);
     }
 
     /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Book  $book
-     * @return \Illuminate\Http\Response
+     * Delete a book.
      */
-    public function destroy(Book $book)
+    public function destroy(Book $book): Response
     {
         $book->delete();
 
-        $data = [
-            'message' => 'Book deleted successfully',
-            'book' =>  $book
-        ];
-
-        return response()->json($data);
+        return response()->noContent();
     }
 }
